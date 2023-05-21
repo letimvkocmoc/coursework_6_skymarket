@@ -1,10 +1,11 @@
+from django.shortcuts import get_object_or_404
 from rest_framework import pagination, viewsets
 from django_filters.rest_framework import DjangoFilterBackend
 from rest_framework.decorators import action
 
 from .models import Ad, Comment
 from .filters import AdFilter
-from .serializers import AdSerializer, AdDetailSerializer
+from .serializers import AdSerializer, AdDetailSerializer, CommentSerializer
 from rest_framework import permissions
 
 
@@ -42,5 +43,14 @@ class AdViewSet(viewsets.ModelViewSet):
 
 
 class CommentViewSet(viewsets.ModelViewSet):
-    pass
+    queryset = Comment.objects.all()
+    serializer_class = CommentSerializer
 
+    def get_queryset(self):
+        ad_instance = get_object_or_404(Ad, id=self.kwargs['ad_pk'])
+        return ad_instance.comment_set.all()
+
+    def perform_create(self, serializer):
+        ad_instance = get_object_or_404(Ad, id=self.kwargs['ad_pk'])
+        user = self.request.user
+        serializer.save(author=user, ad=ad_instance)

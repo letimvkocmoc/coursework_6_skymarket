@@ -6,7 +6,8 @@ from django.utils.translation import gettext_lazy as _
 
 
 class User(AbstractBaseUser):
-    email = models.EmailField(unique=True)
+    username = None
+    email = models.EmailField(unique=True, db_index=True, max_length=60)
     role = models.CharField(max_length=5, choices=UserRoles.choices, default=UserRoles.USER)
     first_name = models.CharField(max_length=100)
     last_name = models.CharField(max_length=100)
@@ -18,7 +19,7 @@ class User(AbstractBaseUser):
     USERNAME_FIELD = 'email'
 
     # поля, которые необходимо заполнить при создании пользователя
-    REQUIRED_FIELDS = ['first_name', 'last_name', 'phone', 'role', 'avatar']
+    REQUIRED_FIELDS = ['first_name', 'last_name', 'phone', 'role']
 
     objects = UserManager()
 
