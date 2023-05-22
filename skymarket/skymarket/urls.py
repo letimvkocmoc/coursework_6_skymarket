@@ -13,5 +13,6 @@ urlpatterns = [
     path("api/redoc-tasks/", include("redoc.urls")),
     path("api/", include('ads.urls')),
     path("api/", include('users.urls')),
+    path('refresh/', TokenRefreshView.as_view(), name='token_refresh'),
 ]
 urlpatterns += static(settings.MEDIA_URL, document_root=settings.MEDIA_ROOT)

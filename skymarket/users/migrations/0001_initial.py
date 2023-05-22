@@ -24,7 +24,6 @@ class Migration(migrations.Migration):
                 ('last_name', models.CharField(max_length=100)),
                 ('phone', phonenumber_field.modelfields.PhoneNumberField(max_length=128, region=None)),
                 ('is_active', models.BooleanField(default=False)),
-                ('image', models.ImageField(upload_to='')),
             ],
             options={
                 'abstract': False,

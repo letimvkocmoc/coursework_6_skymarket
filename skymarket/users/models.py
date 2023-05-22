@@ -1,6 +1,6 @@
 from django.contrib.auth.models import AbstractBaseUser, AbstractUser
 from django.db import models
-from users.managers import UserManager, UserRoles
+from .managers import UserManager, UserRoles
 from phonenumber_field.modelfields import PhoneNumberField
 from django.utils.translation import gettext_lazy as _
 
@@ -13,7 +13,7 @@ class User(AbstractBaseUser):
     last_name = models.CharField(max_length=100)
     phone = PhoneNumberField()
     is_active = models.BooleanField(default=False)
-    image = models.ImageField(upload_to='media/')
+    image = models.ImageField(upload_to='media/', null=True, blank=True)
 
     # константа определяет поле для логина пользователя
     USERNAME_FIELD = 'email'
