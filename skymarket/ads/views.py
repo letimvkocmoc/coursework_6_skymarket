@@ -2,55 +2,64 @@ from django.shortcuts import get_object_or_404
 from rest_framework import pagination, viewsets
 from django_filters.rest_framework import DjangoFilterBackend
 from rest_framework.decorators import action
+from rest_framework.permissions import AllowAny, IsAuthenticated
 
 from .models import Ad, Comment
 from .filters import AdFilter
-from .serializers import AdSerializer, AdDetailSerializer, CommentSerializer
-from rest_framework import permissions
+from .permissions import AdAdminPermission, IsExecutor, IsOwner
+from .serializers import AdSerializer, CommentSerializer
 
 
 class AdPagination(pagination.PageNumberPagination):
-    page_ize = 4
+    page_size = 4
 
 
 class AdViewSet(viewsets.ModelViewSet):
     queryset = Ad.objects.all()
+    serializer_class = AdSerializer
     pagination_class = AdPagination
     filter_backends = (DjangoFilterBackend,)
     filterset_class = AdFilter
-    serializer_class = AdSerializer
-
-    def get_queryset(self):
-        if self.action == 'me':
-            return Ad.objects.filter(author=self.request.user).all()
-        return Ad.objects.all()
+    permission_classes = [AllowAny]
 
     def get_permissions(self):
-        if self.action in ['list', 'retrieve', 'create', 'me']:
-            self.permission_classes = [permissions.IsAuthenticated]
-        else:
-            self.permission_classes = [permissions.IsAdminUser]
-        return super().get_permissions()
+        if self.action == "list":
+            self.permission_classes = [IsOwner, ]
+        elif self.action == "retrieve":
+            self.permission_classes = [IsAuthenticated, ]
+        elif self.action in ["create", "update", "partial_update", "destroy", "me"]:
+            self.permission_classes = [IsAuthenticated, AdAdminPermission | IsExecutor]
 
-    def get_serializer_class(self):
-        if self.action == 'retrieve':
-            return AdDetailSerializer
-        return AdSerializer
+        return super().get_permissions()
 
     @action(detail=False, methods=['get'])
     def me(self, request, *args, **kwargs):
+        self.queryset = Ad.objects.filter(author=request.user)
         return super().list(self, request, *args, **kwargs)
+
+    def perform_create(self, serializer):
+        serializer.save(author=self.request.user)
 
 
 class CommentViewSet(viewsets.ModelViewSet):
+    """ Вьюсет который выводит список всех объектов """
     queryset = Comment.objects.all()
     serializer_class = CommentSerializer
-
-    def get_queryset(self):
-        ad_instance = get_object_or_404(Ad, id=self.kwargs['ad_pk'])
-        return ad_instance.comment_set.all()
+    pagination_class = None
 
     def perform_create(self, serializer):
-        ad_instance = get_object_or_404(Ad, id=self.kwargs['ad_pk'])
+        ads_id = self.kwargs.get("ad_pk")
+        ad_instance = get_object_or_404(Ad, id=ads_id)
         user = self.request.user
         serializer.save(author=user, ad=ad_instance)
+
+    def get_queryset(self, *args, **kwargs):
+        comment = self.kwargs.get('ad_pk')
+        return super().get_queryset().filter(ad=comment)
+
+    def get_permissions(self):
+        if self.action == "retrieve":
+            self.permission_classes = [IsAuthenticated, ]
+        elif self.action in ["create", "update", "partial_update", "destroy", ]:
+            self.permission_classes = [IsAuthenticated, AdAdminPermission | IsExecutor]
+        return super().get_permissions()

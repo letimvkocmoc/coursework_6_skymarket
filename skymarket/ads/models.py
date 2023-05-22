@@ -3,12 +3,19 @@ from django.db import models
 
 
 class Ad(models.Model):
-    title = models.CharField(max_length=100, verbose_name='Название товара')
+    title = models.CharField(max_length=255, verbose_name='Наименование')
     price = models.PositiveIntegerField()
     description = models.TextField()
     author = models.ForeignKey('users.User', on_delete=models.CASCADE)
+    image = models.ImageField(
+        upload_to="images/",
+        verbose_name="фото",
+        help_text="Разместите фото для объявления",
+        null=True,
+        blank=True,
+    )
+
     created_at = models.DateTimeField(auto_now_add=True)
-    image = models.ImageField(upload_to='media/', null=True, blank=True)
 
     class Meta:
         verbose_name = 'Объявление'

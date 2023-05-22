@@ -6,22 +6,37 @@ from django.utils.translation import gettext_lazy as _
 
 
 class User(AbstractBaseUser):
-    username = None
-    email = models.EmailField(unique=True, db_index=True, max_length=60)
+    email = models.EmailField(unique=True)
     role = models.CharField(max_length=5, choices=UserRoles.choices, default=UserRoles.USER)
-    first_name = models.CharField(max_length=100)
-    last_name = models.CharField(max_length=100)
+    first_name = models.CharField(max_length=255)
+    last_name = models.CharField(max_length=255)
     phone = PhoneNumberField()
+    image = models.ImageField(null=True, blank=True)
     is_active = models.BooleanField(default=False)
-    image = models.ImageField(upload_to='media/', null=True, blank=True)
 
-    # константа определяет поле для логина пользователя
-    USERNAME_FIELD = 'email'
+    def image_(self):
+        if self.image:
+            from django.utils.safestring import mark_safe
+            return mark_safe(u'<a href="{0}" target="_blank"><img src="{0}" width="150"/></a>'.format(self.image.url))
+        else:
+            return '(Нет изображения)'
 
-    # поля, которые необходимо заполнить при создании пользователя
-    REQUIRED_FIELDS = ['first_name', 'last_name', 'phone', 'role']
+    image_.short_description = 'Аватарка пользователя'
+    image_.allow_tags = True
 
     objects = UserManager()
+
+    USERNAME_FIELD = 'email'
+    REQUIRED_FIELDS = ['first_name', 'last_name', 'phone', "role"]
+
+    class Meta:
+        verbose_name = _('Пользователь')
+        verbose_name_plural = _('Пользователи')
+        unique_together = ('email', 'phone',)
+
+    def __str__(self):
+        """ Строковое представление модели (отображается в консоли) """
+        return "{}, ({})".format(self.email, self.get_full_name())
 
     @property
     def is_admin(self):
@@ -39,10 +54,12 @@ class User(AbstractBaseUser):
     def is_staff(self):
         return self.is_admin
 
+    @property
     def has_perm(self, perm, obj=None):
         return self.is_admin
 
     def has_module_perms(self, app_label):
         return self.is_admin
 
-
+    def __str__(self):
+        return self.email
